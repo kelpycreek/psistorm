@@ -9,10 +9,10 @@ var db = firebase.firestore();
 export function createCharacter(characterName) {
   db.doc('characters/'+characterName).set({
     level: 0,
-    levelCap: 1,
+    levelCap: 0,
     hp: 1,
     abilityRefs: [],
-    weaponRef: db.doc('weapons/pistol')
+    weaponRef: db.doc('weapons/AX-32 Tiger Shark Pistol')
   })
 }
 
@@ -34,9 +34,11 @@ export function loadCharacter(characterName, characterLoaded, abilityLoaded, wea
 
 export function getNewAbilities(character, callback) {
   db.collection('abilities').get().then(
-    abilities => callback(abilities.docs.map(
-      ability => {return {id: ability.id, ref: ability.ref, ...ability.data()}}
-    ))
+    abilities => callback(
+      generateAbilitySelection(character,
+        abilities.docs.map(
+          ability => {return {id: ability.id, ref: ability.ref, ...ability.data()}}
+    )))
   )
 }
 
@@ -64,28 +66,47 @@ export function switchWeapon(character, weapon) {
   })
 }
 
-
-function getTree() {
-  return [
-    {
-      title: 'Psychic Blades',
-      tags: 'Upkeep 1',
-      short: 'You can create weapons of psychic force, which you use to dismantle your enemies',
-      long: 'You can create a weapon of psychic force, such as a sword, a hammer, a spear or any similar weapon of your choosing. \n \
-            As an action you can spend 1 psipoint to Strike a creature with this weapon, dealing 1d8 damage to it. \n  \
-            Manifesting the blade can be done at will as long as you have a free hand.'
-    },
-    {
-      title: 'Force Barrier',
-      tags: 'Upkeep 1',
-      short: 'You create a hardened barrier of force around yourself, protecting you from harm.',
-      long: 'As an action you create a hardened barrier of force around yourself. When you manifest this power spend up to 2 psipoints, gaining 4 temporary hp per point expended.'
-    },
-    {
-      title: 'Force Barrier 2',
-      tags: 'Upkeep 1',
-      short: 'You create a hardened barrier of force around yourself, protecting you from harm.',
-      long: 'Youve spent hundreds of hours practicing your personal forcefield. You can spend up to 4 psipoints to manifest your Force Barrier'
+// Logic for generating a list of abilities on levelup
+// Can be optimized if we run into performance probs here
+function generateAbilitySelection(character, abilities) {
+  let reducedAbilities = abilities.filter(ability => {
+    // remove abilities we already have
+    console.log('filtering: ', ability);
+    if (character.abilities.some(ab2 => ability.id === ab2.id)) return false;
+    console.log('we dont already have it! good!')
+    // remove abilities we dont have the prerequisites for
+    for (const index in ability.prereqs) {
+      if (!character.abilities.some(ab2 => ab2.id === ability.prereqs[index])) return false;
     }
-  ];
+    console.log('valid!')
+    
+    // success! its a valid ability
+    return true;
+  })
+  // randomize the valid abilities
+  shuffle(reducedAbilities)
+  console.log('next up!')
+  // and finally return a random 4
+  return reducedAbilities.slice(0,3)
+}
+
+//https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
+function shuffle(array) {
+    let counter = array.length;
+
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        let index = Math.floor(Math.random() * counter);
+
+        // Decrease counter by 1
+        counter--;
+
+        // And swap the last element with it
+        let temp = array[counter];
+        array[counter] = array[index];
+        array[index] = temp;
+    }
+
+    return array;
 }

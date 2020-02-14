@@ -62,7 +62,7 @@ class CharacterSheet extends Component {
         switchWeapon(this.state.character, selection)
         break;
     }
-    this.setState({ selectingAbility: false });
+    this.setState({ selectingAbility: false, newAbilities: [] });
   }
   
   render() {
