@@ -7,6 +7,7 @@ import {
   Redirect
 } from "react-router-dom";
 import CharacterSheet from './CharacterSheet/CharacterSheet.js'
+import { updateDb } from './dev.js'
 
 import './App.css'
 
@@ -17,6 +18,7 @@ class App extends Component {
         <Switch>
           <Route exact path="/" children={<HomePageRoute />} />
           <Route path="/characters/:name" children={<CharacterSheetRoute />} />
+          <Route path="/secret" children={<SecretAdminRoute />} />
         </Switch>
       </Router>
     )
@@ -46,6 +48,12 @@ function HomePageRoute() {
         <input type="submit" style={{display: "none"}} />
       </form>
     </div>
+  )
+}
+
+function SecretAdminRoute() {
+  return (
+    <button onClick={()=>updateDb()} >Reset DB</button>
   )
 }
 
