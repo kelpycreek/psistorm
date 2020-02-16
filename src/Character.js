@@ -19,7 +19,6 @@ export function createCharacter(characterName) {
 export function loadCharacter(characterName, characterLoaded, abilityLoaded, weaponLoaded) {
   db.collection("characters").doc(characterName)
     .onSnapshot(doc => {
-      console.log('wheeee ', doc)
       if (doc.exists) {
         doc.data().abilityRefs.map(ref => ref.get().then(ability => abilityLoaded({id: ability.id, ...ability.data()})))
         doc.data().weaponRef.get().then(weapon => weaponLoaded({id: weapon.id, ref: weapon.ref, ...weapon.data()}))
@@ -44,14 +43,14 @@ export function getNewAbilities(character, callback) {
 
 export function getWeapons(character, callback) {
   db.collection('weapons').get().then(
-    weapons => callback(weapons.docs.map(
-      weapon => {return {id: weapon.id, ref: weapon.ref, ...weapon.data()}}
-    ))
+    weapons => callback(
+        generateWeaponSelection(character, weapons.docs.map(
+          weapon => {return {id: weapon.id, ref: weapon.ref, ...weapon.data()}}
+    )))
   )
 }
 
 export function levelUp(character, ability) {
-  console.log('levelling up!')
   character.ref.update({
     level: character.level + 1,
     hp: character.level * 2 + 10,
@@ -60,7 +59,6 @@ export function levelUp(character, ability) {
 }
 
 export function switchWeapon(character, weapon) {
-  console.log('switching weapons!')
   character.ref.update({
     weaponRef: weapon.ref
   })
@@ -71,14 +69,11 @@ export function switchWeapon(character, weapon) {
 function generateAbilitySelection(character, abilities) {
   let reducedAbilities = abilities.filter(ability => {
     // remove abilities we already have
-    console.log('filtering: ', ability);
     if (character.abilities.some(ab2 => ability.id === ab2.id)) return false;
-    console.log('we dont already have it! good!')
     // remove abilities we dont have the prerequisites for
     for (const index in ability.prereqs) {
       if (!character.abilities.some(ab2 => ab2.id === ability.prereqs[index])) return false;
     }
-    console.log('valid!')
     
     // success! its a valid ability
     return true;
@@ -88,6 +83,16 @@ function generateAbilitySelection(character, abilities) {
   console.log('next up!')
   // and finally return a random 4
   return reducedAbilities.slice(0,3)
+}
+
+function generateWeaponSelection(character, weapons) {
+  let reducedWeapons = weapons.filter(weapon => {
+    for (const index in weapon.prereqs) {
+      if (!character.abilities.some(ability => ability.id === weapon.prereqs[index])) return false;
+    }
+    return true;
+  })
+  return reducedWeapons;
 }
 
 //https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
